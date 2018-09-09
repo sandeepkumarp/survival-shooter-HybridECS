@@ -2,4 +2,5 @@
 
 public struct Firing : IComponentData
 {
+    public float FiredAt;
 }

@@ -9,15 +9,11 @@ public class PlayerShootingSystem : JobComponentSystem
     {
         [ReadOnly] public EntityArray EntityArray;
         public EntityCommandBuffer.Concurrent EntityCommandBuffer;
-        public bool IsFiring;
+        public float CurrentTime;
 
         public void Execute(int index)
         {
-            if (!IsFiring)
-            {
-                return;
-            }
-            EntityCommandBuffer.AddComponent(EntityArray[index], new Firing());
+            EntityCommandBuffer.AddComponent(EntityArray[index], new Firing { FiredAt = CurrentTime });
         }
     }
 
@@ -26,19 +22,23 @@ public class PlayerShootingSystem : JobComponentSystem
         public readonly int Length;
         public EntityArray Entities;
         public ComponentDataArray<Weapon> Weapons;
-        public SubtractiveComponent<Firing> Firings;
+        public SubtractiveComponent<Firing> Firing; //Tells Unity to ignore Entities with this Component
     }
 
     [Inject] private Data _data;
     [Inject] private PlayerShootingBarrier _barrier;
     protected override JobHandle OnUpdate(JobHandle inputDeps)
     {
-        return new PlayerShootingJob
+        if (Input.GetButton("Fire1"))
         {
-            EntityArray = _data.Entities,
-            EntityCommandBuffer = _barrier.CreateCommandBuffer(),
-            IsFiring = Input.GetButton("Fire1")
-        }.Schedule(_data.Length, 64, inputDeps);
+            return new PlayerShootingJob
+            {
+                EntityArray = _data.Entities,
+                EntityCommandBuffer = _barrier.CreateCommandBuffer(),
+                CurrentTime = Time.time
+            }.Schedule(_data.Length, 64, inputDeps);
+        }
+        return base.OnUpdate(inputDeps);
     }
 }
 
